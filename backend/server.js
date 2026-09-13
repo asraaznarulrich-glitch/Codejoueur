@@ -16,14 +16,43 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Route de test
+// Stockage des salles en mémoire
+const rooms = {};
+
 app.get('/', (req, res) => {
   res.send('Backend Codejoueur fonctionne !');
 });
 
-// Gestion des connexions Socket.io
 io.on('connection', (socket) => {
-  console.log('Un joueur est connecté :', socket.id);
+  console.log('Joueur connecté :', socket.id);
+
+  // Créer une salle
+  socket.on('createRoom', (callback) => {
+    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    rooms[roomCode] = {
+      players: [{ id: socket.id, name: 'Joueur 1' }],
+      host: socket.id
+    };
+    socket.join(roomCode);
+    callback({ roomCode, success: true });
+    console.log('Salle créée :', roomCode);
+  });
+
+  // Rejoindre une salle
+  socket.on('joinRoom', ({ roomCode, playerName }, callback) => {
+    if (!rooms[roomCode]) {
+      callback({ success: false, message: 'Salle introuvable' });
+      return;
+    }
+
+    rooms[roomCode].players.push({ id: socket.id, name: playerName || 'Joueur' });
+    socket.join(roomCode);
+
+    // Prévenir les autres joueurs
+    io.to(roomCode).emit('playerJoined', rooms[roomCode].players);
+
+    callback({ success: true, players: rooms[roomCode].players });
+  });
 
   socket.on('disconnect', () => {
     console.log('Joueur déconnecté :', socket.id);
