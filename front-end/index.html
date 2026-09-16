@@ -5,99 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Codejoueur</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: white;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
     }
-    h1 {
-      margin-bottom: 10px;
-    }
-    button {
-      padding: 12px 24px;
-      margin: 8px;
+    h1 { margin-bottom: 20px; }
+    input, button {
+      padding: 12px 16px;
       font-size: 16px;
-      border: none;
       border-radius: 8px;
-      cursor: pointer;
-      background: #3b82f6;
-      color: white;
+      border: none;
+      margin: 6px 0;
     }
     input {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
-      margin: 8px;
-      width: 180px;
+      width: 220px;
+      background: #1e293b;
+      color: white;
     }
-    #lobby {
+    button {
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+      width: 220px;
+    }
+    button:disabled {
+      background: #475569;
+      cursor: not-allowed;
+    }
+    #lobby, #game {
       display: none;
+      width: 100%;
+      max-width: 400px;
       text-align: center;
-      margin-top: 20px;
     }
     #players {
       list-style: none;
       padding: 0;
-      margin-top: 15px;
+      margin: 15px 0;
     }
     #players li {
       background: #1e293b;
+      padding: 10px;
       margin: 6px 0;
-      padding: 10px 20px;
       border-radius: 8px;
     }
     #status {
-      margin-top: 15px;
+      margin-top: 20px;
       color: #94a3b8;
+      font-size: 14px;
+    }
+    .host-badge {
+      color: #fbbf24;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <h1>Codejoueur</h1>
 
+  <!-- Écran d'accueil -->
   <div id="home">
+    <input type="text" id="playerName" placeholder="Ton pseudo" maxlength="15">
+    <br>
     <button id="createBtn">Créer une salle</button>
-    <div>
-      <input type="text" id="roomCodeInput" placeholder="Code de la salle">
-      <button id="joinBtn">Rejoindre</button>
-    </div>
+    <br>
+    <input type="text" id="roomCodeInput" placeholder="Code de la salle">
+    <br>
+    <button id="joinBtn">Rejoindre</button>
   </div>
 
+  <!-- Lobby -->
   <div id="lobby">
     <h2>Salle : <span id="currentRoom"></span></h2>
-    <p>Joueurs dans la salle :</p>
+    <p>Joueurs :</p>
     <ul id="players"></ul>
-    <button id="leaveBtn">Quitter la salle</button>
+    <button id="startBtn" style="display:none; background:#22c55e;">Lancer la partie</button>
+    <br>
+    <button id="leaveBtn" style="background:#ef4444;">Quitter</button>
   </div>
 
-  <p id="status">Connexion...</p>
+  <!-- Écran de jeu (pour plus tard) -->
+  <div id="game">
+    <h2>La partie commence !</h2>
+    <p>Prochaine étape : les manches de code</p>
+  </div>
+
+  <p id="status">Connexion au serveur...</p>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io("https://codejoueur-backend.onrender.com");
 
-    const status = document.getElementById("status");
+    const statusEl = document.getElementById("status");
     const home = document.getElementById("home");
     const lobby = document.getElementById("lobby");
+    const game = document.getElementById("game");
     const playersList = document.getElementById("players");
-    const currentRoom = document.getElementById("currentRoom");
+    const currentRoomEl = document.getElementById("currentRoom");
+    const startBtn = document.getElementById("startBtn");
 
     let myRoom = null;
+    let isHost = false;
 
     socket.on("connect", () => {
-      status.textContent = "Connecté au serveur";
+      statusEl.textContent = "Connecté";
     });
 
     socket.on("playerJoined", (players) => {
       updatePlayers(players);
+    });
+
+    socket.on("gameStarted", () => {
+      lobby.style.display = "none";
+      game.style.display = "block";
+      statusEl.textContent = "Partie lancée !";
     });
 
     function updatePlayers(players) {
@@ -109,36 +138,52 @@
       });
     }
 
-    function showLobby(roomCode, players) {
+    function showLobby(roomCode, players, host = false) {
       myRoom = roomCode;
+      isHost = host;
       home.style.display = "none";
       lobby.style.display = "block";
-      currentRoom.textContent = roomCode;
+      currentRoomEl.textContent = roomCode;
       updatePlayers(players);
+
+      if (isHost) {
+        startBtn.style.display = "inline-block";
+      }
     }
 
     document.getElementById("createBtn").onclick = () => {
-      socket.emit("createRoom", (res) => {
+      const name = document.getElementById("playerName").value.trim() || "Joueur";
+      socket.emit("createRoom", { playerName: name }, (res) => {
         if (res.success) {
-          showLobby(res.roomCode, [{ id: socket.id, name: "Joueur 1" }]);
-          status.textContent = "Salle créée";
+          showLobby(res.roomCode, res.players, true);
+          statusEl.textContent = "Salle créée - tu es l'hôte";
         }
       });
     };
 
     document.getElementById("joinBtn").onclick = () => {
+      const name = document.getElementById("playerName").value.trim() || "Joueur";
       const code = document.getElementById("roomCodeInput").value.trim().toUpperCase();
-      if (!code) return alert("Entre un code de salle");
 
-      socket.emit("joinRoom", { roomCode: code, playerName: "Joueur" }, (res) => {
+      if (!code) {
+        alert("Entre un code de salle");
+        return;
+      }
+
+      socket.emit("joinRoom", { roomCode: code, playerName: name }, (res) => {
         if (res.success) {
-          showLobby(code, res.players);
-          status.textContent = "Tu as rejoint la salle";
+          showLobby(code, res.players, false);
+          statusEl.textContent = "Tu as rejoint la salle";
         } else {
-          status.textContent = res.message;
           alert(res.message);
+          statusEl.textContent = res.message;
         }
       });
+    };
+
+    startBtn.onclick = () => {
+      if (!myRoom || !isHost) return;
+      socket.emit("startGame", { roomCode: myRoom });
     };
 
     document.getElementById("leaveBtn").onclick = () => {
