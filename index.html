@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codejoueur</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 30px;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #3b82f6;
+      color: white;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      margin: 10px;
+      width: 200px;
+    }
+    #status {
+      margin-top: 20px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Codejoueur</h1>
+
+  <button id="createBtn">Créer une salle</button>
+
+  <div>
+    <input type="text" id="roomCode" placeholder="Code de la salle">
+    <button id="joinBtn">Rejoindre</button>
+  </div>
+
+  <p id="status">Non connecté</p>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io("https://codejoueur-backend.onrender.com");
+
+    const status = document.getElementById("status");
+    const createBtn = document.getElementById("createBtn");
+    const joinBtn = document.getElementById("joinBtn");
+    const roomCodeInput = document.getElementById("roomCode");
+
+    socket.on("connect", () => {
+      status.textContent = "Connecté au serveur";
+    });
+
+    createBtn.onclick = () => {
+      socket.emit("createRoom", (response) => {
+        if (response.success) {
+          status.textContent = "Salle créée : " + response.roomCode;
+          alert("Code de la salle : " + response.roomCode);
+        }
+      });
+    };
+
+    joinBtn.onclick = () => {
+      const code = roomCodeInput.value.trim().toUpperCase();
+      if (!code) return alert("Entre un code");
+
+      socket.emit("joinRoom", { roomCode: code, playerName: "Joueur" }, (response) => {
+        if (response.success) {
+          status.textContent = "Tu as rejoint la salle " + code;
+        } else {
+          status.textContent = response.message;
+        }
+      });
+    };
+  </script>
+</body>
+</html>
