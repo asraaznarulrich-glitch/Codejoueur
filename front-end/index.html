@@ -14,7 +14,7 @@
       padding: 16px;
       min-height: 100vh;
     }
-    h1, h2 { text-align: center; }
+    h1, h2, h3 { text-align: center; margin: 8px 0; }
     input, button, textarea {
       width: 100%;
       max-width: 420px;
@@ -22,7 +22,7 @@
       font-size: 16px;
       border-radius: 8px;
       border: none;
-      margin: 6px 0;
+      margin: 6px auto;
       display: block;
     }
     input, textarea {
@@ -30,7 +30,7 @@
       color: white;
     }
     textarea {
-      height: 180px;
+      height: 160px;
       font-family: monospace;
       resize: vertical;
     }
@@ -42,7 +42,7 @@
     button:disabled {
       background: #475569;
     }
-    #home, #lobby, #game {
+    #home, #lobby, #game, #resultScreen {
       display: none;
       max-width: 480px;
       margin: 0 auto;
@@ -51,28 +51,31 @@
     #players {
       list-style: none;
       padding: 0;
+      margin: 12px 0;
     }
     #players li {
       background: #1e293b;
       padding: 10px;
       margin: 6px 0;
       border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
     }
+    .solved { color: #4ade80; }
+    .eliminated { color: #f87171; text-decoration: line-through; }
     #status {
       text-align: center;
       color: #94a3b8;
-      margin-top: 16px;
+      margin-top: 12px;
       font-size: 14px;
     }
-    #result {
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 8px;
+    #timer {
+      font-size: 28px;
+      font-weight: bold;
       text-align: center;
-      display: none;
+      color: #fbbf24;
+      margin: 10px 0;
     }
-    .success { background: #166534; }
-    .error { background: #7f1d1d; }
     #statement {
       background: #1e293b;
       padding: 14px;
@@ -81,6 +84,15 @@
       margin-bottom: 12px;
       line-height: 1.4;
     }
+    #feedback {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+    .success { background: #166534; }
+    .error { background: #7f1d1d; }
   </style>
 </head>
 <body>
@@ -105,11 +117,21 @@
 
   <!-- Écran de jeu -->
   <div id="game">
-    <h2 id="problemTitle">Manche</h2>
+    <h2 id="roundTitle">Manche</h2>
+    <div id="timer">03:00</div>
     <div id="statement"></div>
     <textarea id="codeArea" placeholder="Écris ton code ici..."></textarea>
     <button id="submitBtn">Soumettre</button>
-    <div id="result"></div>
+    <div id="feedback"></div>
+    <h3>Joueurs</h3>
+    <ul id="gamePlayers"></ul>
+  </div>
+
+  <!-- Écran de résultat de manche / fin -->
+  <div id="resultScreen">
+    <h2 id="resultTitle"></h2>
+    <div id="resultContent"></div>
+    <button id="backHomeBtn" style="background:#3b82f6; margin-top:20px;">Retour à l'accueil</button>
   </div>
 
   <p id="status">Connexion...</p>
@@ -122,39 +144,96 @@
     const home = document.getElementById("home");
     const lobby = document.getElementById("lobby");
     const game = document.getElementById("game");
+    const resultScreen = document.getElementById("resultScreen");
     const playersList = document.getElementById("players");
+    const gamePlayersList = document.getElementById("gamePlayers");
     const currentRoomEl = document.getElementById("currentRoom");
     const startBtn = document.getElementById("startBtn");
-    const resultEl = document.getElementById("result");
+    const timerEl = document.getElementById("timer");
+    const feedbackEl = document.getElementById("feedback");
 
     let myRoom = null;
     let isHost = false;
+    let myId = null;
 
     socket.on("connect", () => {
+      myId = socket.id;
       statusEl.textContent = "Connecté";
     });
 
     socket.on("playerJoined", (players) => {
-      updatePlayers(players);
+      updatePlayersList(playersList, players);
     });
 
-    socket.on("gameStarted", (problem) => {
+    socket.on("roundStarted", (data) => {
       home.style.display = "none";
       lobby.style.display = "none";
+      resultScreen.style.display = "none";
       game.style.display = "block";
 
-      document.getElementById("problemTitle").textContent = problem.title;
-      document.getElementById("statement").textContent = problem.statement;
-      document.getElementById("codeArea").value = "function add(a, b) {\n  // ton code ici\n}";
+      document.getElementById("roundTitle").textContent = data.problem.title + " (Manche " + data.roundNumber + ")";
+      document.getElementById("statement").textContent = data.problem.statement;
+      document.getElementById("codeArea").value = "";
+      feedbackEl.style.display = "none";
+      updateTimer(data.timeLeft);
+      updatePlayersList(gamePlayersList, data.players);
       statusEl.textContent = "Manche en cours";
     });
 
-    function updatePlayers(players) {
-      playersList.innerHTML = "";
+    socket.on("timerUpdate", (timeLeft) => {
+      updateTimer(timeLeft);
+    });
+
+    socket.on("playerSolved", (data) => {
+      updatePlayersList(gamePlayersList, data.players);
+    });
+
+    socket.on("roundEnded", (data) => {
+      game.style.display = "none";
+      resultScreen.style.display = "block";
+      document.getElementById("resultTitle").textContent = "Fin de la manche";
+
+      let html = "<p><strong>Qualifiés :</strong></p><ul>";
+      data.survivors.forEach(p => html += `<li class="solved">${p.name}</li>`);
+      html += "</ul><p><strong>Éliminés :</strong></p><ul>";
+      data.eliminated.forEach(p => html += `<li class="eliminated">${p.name}</li>`);
+      html += "</ul><p>Prochaine manche dans 5 secondes...</p>";
+
+      document.getElementById("resultContent").innerHTML = html;
+    });
+
+    socket.on("gameOver", (data) => {
+      game.style.display = "none";
+      resultScreen.style.display = "block";
+      document.getElementById("resultTitle").textContent = "Fin de la partie";
+
+      const winners = data.players.filter(p => !p.eliminated);
+      let html = "<p><strong>Gagnants :</strong></p><ul>";
+      winners.forEach(p => html += `<li class="solved">${p.name}</li>`);
+      html += "</ul>";
+
+      document.getElementById("resultContent").innerHTML = html;
+    });
+
+    function updateTimer(seconds) {
+      const min = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const sec = (seconds % 60).toString().padStart(2, "0");
+      timerEl.textContent = `\( {min}: \){sec}`;
+      if (seconds <= 30) timerEl.style.color = "#f87171";
+      else timerEl.style.color = "#fbbf24";
+    }
+
+    function updatePlayersList(listEl, players) {
+      listEl.innerHTML = "";
       players.forEach(p => {
         const li = document.createElement("li");
-        li.textContent = p.name;
-        playersList.appendChild(li);
+        let text = p.name;
+        if (p.solved) text += " ✓";
+        if (p.eliminated) text += " (éliminé)";
+        li.textContent = text;
+        if (p.solved) li.classList.add("solved");
+        if (p.eliminated) li.classList.add("eliminated");
+        listEl.appendChild(li);
       });
     }
 
@@ -164,7 +243,7 @@
       home.style.display = "none";
       lobby.style.display = "block";
       currentRoomEl.textContent = roomCode;
-      updatePlayers(players);
+      updatePlayersList(playersList, players);
       startBtn.style.display = host ? "block" : "none";
     }
 
@@ -208,14 +287,14 @@
       socket.emit("submitSolution", { roomCode: myRoom, code }, (res) => {
         btn.disabled = false;
         btn.textContent = "Soumettre";
-
-        resultEl.style.display = "block";
-        resultEl.textContent = res.message;
-        resultEl.className = res.success ? "success" : "error";
+        feedbackEl.style.display = "block";
+        feedbackEl.textContent = res.message;
+        feedbackEl.className = res.success ? "success" : "error";
       });
     };
 
     document.getElementById("leaveBtn").onclick = () => location.reload();
+    document.getElementById("backHomeBtn").onclick = () => location.reload();
   </script>
 </body>
-</html>
+                                                               </html>
