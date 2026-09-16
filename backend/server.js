@@ -16,7 +16,6 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Stockage des salles en mémoire
 const rooms = {};
 
 app.get('/', (req, res) => {
@@ -27,31 +26,50 @@ io.on('connection', (socket) => {
   console.log('Joueur connecté :', socket.id);
 
   // Créer une salle
-  socket.on('createRoom', (callback) => {
+  socket.on('createRoom', ({ playerName }, callback) => {
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
     rooms[roomCode] = {
-      players: [{ id: socket.id, name: 'Joueur 1' }],
-      host: socket.id
+      players: [{ id: socket.id, name: playerName || 'Joueur 1' }],
+      host: socket.id,
+      started: false
     };
+
     socket.join(roomCode);
-    callback({ roomCode, success: true });
+    callback({ success: true, roomCode, players: rooms[roomCode].players });
     console.log('Salle créée :', roomCode);
   });
 
   // Rejoindre une salle
   socket.on('joinRoom', ({ roomCode, playerName }, callback) => {
-    if (!rooms[roomCode]) {
+    const room = rooms[roomCode];
+
+    if (!room) {
       callback({ success: false, message: 'Salle introuvable' });
       return;
     }
 
-    rooms[roomCode].players.push({ id: socket.id, name: playerName || 'Joueur' });
+    if (room.started) {
+      callback({ success: false, message: 'La partie a déjà commencé' });
+      return;
+    }
+
+    room.players.push({ id: socket.id, name: playerName || 'Joueur' });
     socket.join(roomCode);
 
-    // Prévenir les autres joueurs
-    io.to(roomCode).emit('playerJoined', rooms[roomCode].players);
+    io.to(roomCode).emit('playerJoined', room.players);
+    callback({ success: true, players: room.players, isHost: false });
+  });
 
-    callback({ success: true, players: rooms[roomCode].players });
+  // Lancer la partie
+  socket.on('startGame', ({ roomCode }) => {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    if (room.host !== socket.id) return; // seul le host peut lancer
+
+    room.started = true;
+    io.to(roomCode).emit('gameStarted');
   });
 
   socket.on('disconnect', () => {
