@@ -13,15 +13,16 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
     h1 {
-      margin-bottom: 30px;
+      margin-bottom: 10px;
     }
     button {
       padding: 12px 24px;
-      margin: 10px;
+      margin: 8px;
       font-size: 16px;
       border: none;
       border-radius: 8px;
@@ -34,11 +35,27 @@
       font-size: 16px;
       border-radius: 6px;
       border: none;
-      margin: 10px;
-      width: 200px;
+      margin: 8px;
+      width: 180px;
+    }
+    #lobby {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #players {
+      list-style: none;
+      padding: 0;
+      margin-top: 15px;
+    }
+    #players li {
+      background: #1e293b;
+      margin: 6px 0;
+      padding: 10px 20px;
+      border-radius: 8px;
     }
     #status {
-      margin-top: 20px;
+      margin-top: 15px;
       color: #94a3b8;
     }
   </style>
@@ -46,49 +63,87 @@
 <body>
   <h1>Codejoueur</h1>
 
-  <button id="createBtn">Créer une salle</button>
-
-  <div>
-    <input type="text" id="roomCode" placeholder="Code de la salle">
-    <button id="joinBtn">Rejoindre</button>
+  <div id="home">
+    <button id="createBtn">Créer une salle</button>
+    <div>
+      <input type="text" id="roomCodeInput" placeholder="Code de la salle">
+      <button id="joinBtn">Rejoindre</button>
+    </div>
   </div>
 
-  <p id="status">Non connecté</p>
+  <div id="lobby">
+    <h2>Salle : <span id="currentRoom"></span></h2>
+    <p>Joueurs dans la salle :</p>
+    <ul id="players"></ul>
+    <button id="leaveBtn">Quitter la salle</button>
+  </div>
+
+  <p id="status">Connexion...</p>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io("https://codejoueur-backend.onrender.com");
 
     const status = document.getElementById("status");
-    const createBtn = document.getElementById("createBtn");
-    const joinBtn = document.getElementById("joinBtn");
-    const roomCodeInput = document.getElementById("roomCode");
+    const home = document.getElementById("home");
+    const lobby = document.getElementById("lobby");
+    const playersList = document.getElementById("players");
+    const currentRoom = document.getElementById("currentRoom");
+
+    let myRoom = null;
 
     socket.on("connect", () => {
       status.textContent = "Connecté au serveur";
     });
 
-    createBtn.onclick = () => {
-      socket.emit("createRoom", (response) => {
-        if (response.success) {
-          status.textContent = "Salle créée : " + response.roomCode;
-          alert("Code de la salle : " + response.roomCode);
+    socket.on("playerJoined", (players) => {
+      updatePlayers(players);
+    });
+
+    function updatePlayers(players) {
+      playersList.innerHTML = "";
+      players.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p.name;
+        playersList.appendChild(li);
+      });
+    }
+
+    function showLobby(roomCode, players) {
+      myRoom = roomCode;
+      home.style.display = "none";
+      lobby.style.display = "block";
+      currentRoom.textContent = roomCode;
+      updatePlayers(players);
+    }
+
+    document.getElementById("createBtn").onclick = () => {
+      socket.emit("createRoom", (res) => {
+        if (res.success) {
+          showLobby(res.roomCode, [{ id: socket.id, name: "Joueur 1" }]);
+          status.textContent = "Salle créée";
         }
       });
     };
 
-    joinBtn.onclick = () => {
-      const code = roomCodeInput.value.trim().toUpperCase();
-      if (!code) return alert("Entre un code");
+    document.getElementById("joinBtn").onclick = () => {
+      const code = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+      if (!code) return alert("Entre un code de salle");
 
-      socket.emit("joinRoom", { roomCode: code, playerName: "Joueur" }, (response) => {
-        if (response.success) {
-          status.textContent = "Tu as rejoint la salle " + code;
+      socket.emit("joinRoom", { roomCode: code, playerName: "Joueur" }, (res) => {
+        if (res.success) {
+          showLobby(code, res.players);
+          status.textContent = "Tu as rejoint la salle";
         } else {
-          status.textContent = response.message;
+          status.textContent = res.message;
+          alert(res.message);
         }
       });
+    };
+
+    document.getElementById("leaveBtn").onclick = () => {
+      location.reload();
     };
   </script>
 </body>
-  </html>
+</html>
