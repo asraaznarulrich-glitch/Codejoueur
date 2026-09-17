@@ -3,359 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Codejoueur</title>
+  <meta name="description" content="Codejoueur — le jeu de course de programmation multijoueur.">
+  <title>Codejoueur — Code, vitesse, victoire</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      margin: 0;
-      padding: 16px;
-      min-height: 100vh;
-    }
-    h1, h2, h3 { text-align: center; margin: 8px 0; }
-    input, button, textarea {
-      width: 100%;
-      max-width: 420px;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      margin: 6px auto;
-      display: block;
-    }
-    input, textarea {
-      background: #1e293b;
-      color: white;
-    }
-    textarea {
-      height: 150px;
-      font-family: monospace;
-      resize: vertical;
-    }
-    button {
-      background: #3b82f6;
-      color: white;
-      cursor: pointer;
-    }
-    button:disabled { background: #475569; }
-    #home, #lobby, #game, #resultScreen {
-      display: none;
-      max-width: 520px;
-      margin: 0 auto;
-    }
-    #home { display: block; }
-    #players, #gamePlayers {
-      list-style: none;
-      padding: 0;
-      margin: 10px 0;
-    }
-    #players li, #gamePlayers li {
-      background: #1e293b;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 8px;
-    }
-    .solved { color: #4ade80; }
-    .eliminated { color: #f87171; text-decoration: line-through; opacity: 0.7; }
-    #status {
-      text-align: center;
-      color: #94a3b8;
-      margin-top: 12px;
-      font-size: 14px;
-    }
-    #timer {
-      font-size: 28px;
-      font-weight: bold;
-      text-align: center;
-      color: #fbbf24;
-      margin: 8px 0;
-    }
-    #statement {
-      background: #1e293b;
-      padding: 14px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      margin-bottom: 12px;
-      line-height: 1.4;
-    }
-    #feedback {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: center;
-      display: none;
-    }
-    .success { background: #166534; }
-    .error { background: #7f1d1d; }
-
-    /* Progression visuelle */
-    .progress-container {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 16px 0;
-      flex-wrap: wrap;
-    }
-    .progress-step {
-      width: 42px;
-      height: 42px;
-      background: #1e293b;
-      border: 2px solid #334155;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 14px;
-      position: relative;
-    }
-    .progress-step.current {
-      border-color: #3b82f6;
-      background: #1e3a8a;
-    }
-    .progress-step.completed {
-      border-color: #22c55e;
-      background: #14532d;
-    }
-    .player-dot {
-      position: absolute;
-      bottom: -6px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #3b82f6;
-      border: 2px solid white;
-    }
+    :root { --bg:#080b16; --surface:rgba(18,24,43,.82); --surface-2:#151d35; --line:rgba(148,163,184,.18); --text:#f8fafc; --muted:#9aa8c2; --primary:#7c5cff; --primary-2:#22d3ee; --success:#34d399; --danger:#fb7185; --warning:#fbbf24; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--text); font-family:'Space Grotesk',sans-serif; background:radial-gradient(circle at 15% 0%,#242052 0,transparent 36%),radial-gradient(circle at 90% 20%,#0d4354 0,transparent 32%),var(--bg); }
+    body::before { content:''; position:fixed; inset:0; pointer-events:none; opacity:.24; background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px); background-size:36px 36px; mask-image:linear-gradient(to bottom,#000,transparent 85%); }
+    a { color:#a5b4fc; text-decoration:none; } a:hover { color:#fff; }
+    .topbar { position:relative; z-index:2; max-width:1080px; margin:auto; padding:22px 24px; display:flex; justify-content:space-between; align-items:center; gap:18px; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:700; font-size:1.15rem; letter-spacing:-.03em; }
+    .brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:#fff; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 8px 28px rgba(34,211,238,.22); }
+    .nav { display:flex; gap:18px; font-size:.88rem; color:var(--muted); }
+    .shell { position:relative; z-index:1; width:min(100% - 32px,760px); margin:24px auto 56px; }
+    .hero { text-align:center; margin-bottom:24px; } .eyebrow { color:#67e8f9; font-family:'DM Mono',monospace; font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:12px 0 10px; font-size:clamp(2.5rem,7vw,4.5rem); line-height:.98; letter-spacing:-.07em; } h1 span { color:var(--primary-2); }
+    .hero p { max-width:550px; margin:0 auto; color:var(--muted); font-size:1.02rem; line-height:1.65; }
+    .panel { border:1px solid var(--line); border-radius:24px; padding:26px; background:linear-gradient(145deg,rgba(25,32,57,.9),rgba(11,15,29,.78)); box-shadow:0 22px 70px rgba(0,0,0,.28); backdrop-filter:blur(18px); }
+    .screen { display:none; } .screen.active { display:block; animation:rise .35s ease both; } @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .full { grid-column:1/-1; }
+    input, textarea, button { width:100%; border:1px solid var(--line); border-radius:13px; padding:14px 15px; color:var(--text); font:inherit; transition:.2s ease; }
+    input, textarea { background:rgba(7,11,24,.75); outline:none; } input:focus, textarea:focus { border-color:var(--primary-2); box-shadow:0 0 0 4px rgba(34,211,238,.1); }
+    textarea { min-height:210px; resize:vertical; font-family:'DM Mono',monospace; font-size:.9rem; line-height:1.6; }
+    button { cursor:pointer; border:0; font-weight:700; background:linear-gradient(135deg,var(--primary),#5b7cff); box-shadow:0 8px 20px rgba(124,92,255,.2); } button:hover:not(:disabled) { transform:translateY(-2px); filter:brightness(1.1); } button:disabled { cursor:not-allowed; opacity:.5; }
+    .secondary { background:var(--surface-2); box-shadow:none; } .danger { background:linear-gradient(135deg,#e11d48,#fb7185); } .success-btn { background:linear-gradient(135deg,#059669,#34d399); }
+    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; } h2,h3 { margin:0; letter-spacing:-.03em; } h2 { font-size:1.45rem; } h3 { font-size:1rem; }
+    .room-code { color:#67e8f9; font-family:'DM Mono',monospace; letter-spacing:.16em; } .hint,.status { color:var(--muted); font-size:.88rem; } .status { text-align:center; margin:16px 0 0; }
+    ul { list-style:none; margin:14px 0 20px; padding:0; display:grid; gap:8px; } li { padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:rgba(21,29,53,.68); } .solved { color:var(--success); border-color:rgba(52,211,153,.3); } .eliminated { color:var(--danger); opacity:.7; text-decoration:line-through; }
+    .round-meta { display:flex; justify-content:space-between; align-items:center; color:var(--muted); margin-bottom:14px; } #timer { color:var(--warning); font-family:'DM Mono',monospace; font-size:1.45rem; font-weight:500; } #statement { white-space:pre-wrap; margin-bottom:14px; padding:16px; border-left:3px solid var(--primary-2); border-radius:12px; color:#dbeafe; background:rgba(15,23,42,.8); line-height:1.6; }
+    .progress { display:flex; gap:8px; margin:4px 0 20px; } .step { flex:1; height:6px; border-radius:20px; background:#293452; } .step.current { background:var(--primary-2); } .step.completed { background:var(--success); }
+    #feedback { display:none; margin-top:12px; padding:12px; border-radius:12px; text-align:center; } .feedback-success { display:block!important; color:#bbf7d0; background:rgba(22,101,52,.65); } .feedback-error { display:block!important; color:#fecdd3; background:rgba(127,29,29,.65); }
+    .result-card { text-align:center; } .result-card ul { text-align:left; } .footer { text-align:center; color:var(--muted); font-size:.78rem; margin-top:20px; }
+    @media (max-width:600px) { .topbar { padding:18px 16px; } .nav { gap:10px; font-size:.78rem; } .shell { width:min(100% - 20px,760px); margin-top:15px; } .panel { padding:18px; border-radius:19px; } .form-grid { grid-template-columns:1fr; } .full { grid-column:auto; } h1 { font-size:3rem; } }
   </style>
 </head>
 <body>
-  <h1>Codejoueur</h1>
-
-  <!-- Accueil -->
-  <div id="home">
-    <input type="text" id="playerName" placeholder="Ton pseudo" maxlength="15">
-    <button id="createBtn">Créer une salle</button>
-    <input type="text" id="roomCodeInput" placeholder="Code de la salle">
-    <button id="joinBtn">Rejoindre</button>
-  </div>
-
-  <!-- Lobby -->
-  <div id="lobby">
-    <h2>Salle : <span id="currentRoom"></span></h2>
-    <p>Joueurs :</p>
-    <ul id="players"></ul>
-    <button id="startBtn" style="display:none; background:#22c55e;">Lancer la partie</button>
-    <button id="leaveBtn" style="background:#ef4444;">Quitter</button>
-  </div>
-
-  <!-- Écran de jeu -->
-  <div id="game">
-    <h2 id="roundTitle">Manche</h2>
-    
-    <!-- Barre de progression -->
-    <div class="progress-container" id="progressBar"></div>
-
-    <div id="timer">03:00</div>
-    <div id="statement"></div>
-    <textarea id="codeArea" placeholder="Écris ton code ici..."></textarea>
-    <button id="submitBtn">Soumettre</button>
-    <div id="feedback"></div>
-
-    <h3>Joueurs</h3>
-    <ul id="gamePlayers"></ul>
-  </div>
-
-  <!-- Résultat -->
-  <div id="resultScreen">
-    <h2 id="resultTitle"></h2>
-    <div id="resultContent"></div>
-    <button id="backHomeBtn" style="background:#3b82f6; margin-top:20px;">Retour à l'accueil</button>
-  </div>
-
-  <p id="status">Connexion...</p>
-
+  <header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">&lt;/&gt;</span> Codejoueur</a><nav class="nav"><a href="docs/index.html">Documentation</a><a href="privacy.html">Confidentialité</a><a href="security.html">Sécurité</a></nav></header>
+  <main class="shell">
+    <section class="hero"><div class="eyebrow">// code • vitesse • victoire</div><h1>Joue. <span>Code.</span> Gagne.</h1><p>Affronte tes amis dans une course de programmation en temps réel. Résous les défis avant la fin du chrono et reste dans la partie.</p></section>
+    <section id="home" class="panel screen active"><div class="section-head"><div><h2>Prêt à jouer ?</h2><p class="hint">Choisis un pseudo pour commencer.</p></div><span class="eyebrow">LIVE</span></div><div class="form-grid"><input class="full" type="text" id="playerName" placeholder="Ton pseudo" maxlength="15" autocomplete="nickname"><button id="createBtn">Créer une salle</button><div><input type="text" id="roomCodeInput" placeholder="Code de la salle" maxlength="6" aria-label="Code de la salle"><button class="secondary" id="joinBtn">Rejoindre une salle</button></div></div></section>
+    <section id="lobby" class="panel screen"><div class="section-head"><div><p class="hint">Salle de jeu</p><h2 class="room-code" id="currentRoom"></h2></div><span class="eyebrow">LOBBY</span></div><p class="hint">Joueurs connectés</p><ul id="players"></ul><button class="success-btn" id="startBtn" style="display:none">Lancer la partie</button><button class="danger" id="leaveBtn">Quitter la salle</button></section>
+    <section id="game" class="panel screen"><div class="round-meta"><h2 id="roundTitle">Manche</h2><div id="timer">03:00</div></div><div class="progress" id="progressBar"></div><div id="statement"></div><textarea id="codeArea" placeholder="Écris ton code ici..." spellcheck="false"></textarea><button id="submitBtn" style="margin-top:12px">Soumettre ma solution</button><div id="feedback"></div><h3 style="margin-top:24px">Adversaires</h3><ul id="gamePlayers"></ul></section>
+    <section id="resultScreen" class="panel screen result-card"><div class="eyebrow">RÉSULTATS</div><h2 id="resultTitle" style="margin-top:10px"></h2><div id="resultContent"></div><button id="backHomeBtn">Retour à l'accueil</button></section>
+    <p id="status" class="status">Connexion au serveur...</p><div class="footer"><a href="docs/index.html">Comment jouer ?</a> · Respecte les autres joueurs et joue fair-play.</div>
+  </main>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io("https://codejoueur-backend.onrender.com");
-
-    const statusEl = document.getElementById("status");
-    const home = document.getElementById("home");
-    const lobby = document.getElementById("lobby");
-    const game = document.getElementById("game");
-    const resultScreen = document.getElementById("resultScreen");
-    const playersList = document.getElementById("players");
-    const gamePlayersList = document.getElementById("gamePlayers");
-    const currentRoomEl = document.getElementById("currentRoom");
-    const startBtn = document.getElementById("startBtn");
-    const timerEl = document.getElementById("timer");
-    const feedbackEl = document.getElementById("feedback");
-    const progressBar = document.getElementById("progressBar");
-
-    let myRoom = null;
-    let isHost = false;
-    let totalRounds = 2; // on a 2 manches pour l'instant
-    let currentRound = 0;
-
-    socket.on("connect", () => {
-      statusEl.textContent = "Connecté";
-    });
-
-    socket.on("playerJoined", (players) => {
-      updatePlayersList(playersList, players);
-    });
-
-    socket.on("roundStarted", (data) => {
-      home.style.display = "none";
-      lobby.style.display = "none";
-      resultScreen.style.display = "none";
-      game.style.display = "block";
-
-      currentRound = data.roundNumber;
-      document.getElementById("roundTitle").textContent = data.problem.title;
-      document.getElementById("statement").textContent = data.problem.statement;
-      document.getElementById("codeArea").value = "";
-      feedbackEl.style.display = "none";
-
-      updateTimer(data.timeLeft);
-      updatePlayersList(gamePlayersList, data.players);
-      renderProgress(data.roundNumber, data.players);
-      statusEl.textContent = "Manche en cours";
-    });
-
-    socket.on("timerUpdate", (timeLeft) => {
-      updateTimer(timeLeft);
-    });
-
-    socket.on("playerSolved", (data) => {
-      updatePlayersList(gamePlayersList, data.players);
-      renderProgress(currentRound, data.players);
-    });
-
-    socket.on("roundEnded", (data) => {
-      game.style.display = "none";
-      resultScreen.style.display = "block";
-      document.getElementById("resultTitle").textContent = "Fin de la manche";
-
-      let html = "<p><strong>Qualifiés :</strong></p><ul>";
-      data.survivors.forEach(p => html += `<li class="solved">${p.name}</li>`);
-      html += "</ul><p><strong>Éliminés :</strong></p><ul>";
-      data.eliminated.forEach(p => html += `<li class="eliminated">${p.name}</li>`);
-      html += "</ul><p>Prochaine manche dans quelques secondes...</p>";
-
-      document.getElementById("resultContent").innerHTML = html;
-    });
-
-    socket.on("gameOver", (data) => {
-      game.style.display = "none";
-      resultScreen.style.display = "block";
-      document.getElementById("resultTitle").textContent = "Fin de la partie";
-
-      const winners = data.players.filter(p => !p.eliminated);
-      let html = "<p><strong>Gagnants :</strong></p><ul>";
-      if (winners.length === 0) html += "<li>Aucun gagnant</li>";
-      winners.forEach(p => html += `<li class="solved">${p.name}</li>`);
-      html += "</ul>";
-
-      document.getElementById("resultContent").innerHTML = html;
-    });
-
-    function updateTimer(seconds) {
-      const min = Math.floor(seconds / 60).toString().padStart(2, "0");
-      const sec = (seconds % 60).toString().padStart(2, "0");
-      timerEl.textContent = `\( {min}: \){sec}`;
-      timerEl.style.color = seconds <= 30 ? "#f87171" : "#fbbf24";
-    }
-
-    function updatePlayersList(listEl, players) {
-      listEl.innerHTML = "";
-      players.forEach(p => {
-        const li = document.createElement("li");
-        let text = p.name;
-        if (p.solved) text += " ✓";
-        if (p.eliminated) text += " (éliminé)";
-        li.textContent = text;
-        if (p.solved) li.classList.add("solved");
-        if (p.eliminated) li.classList.add("eliminated");
-        listEl.appendChild(li);
-      });
-    }
-
-    function renderProgress(roundNumber, players) {
-      progressBar.innerHTML = "";
-      for (let i = 1; i <= totalRounds; i++) {
-        const step = document.createElement("div");
-        step.className = "progress-step";
-        step.textContent = i;
-
-        if (i < roundNumber) step.classList.add("completed");
-        if (i === roundNumber) step.classList.add("current");
-
-        // Petits points pour les joueurs qui ont validé cette manche
-        const solvedHere = players.filter(p => p.solved && !p.eliminated);
-        // (simplifié pour l'instant)
-
-        progressBar.appendChild(step);
-      }
-    }
-
-    function showLobby(roomCode, players, host = false) {
-      myRoom = roomCode;
-      isHost = host;
-      home.style.display = "none";
-      lobby.style.display = "block";
-      currentRoomEl.textContent = roomCode;
-      updatePlayersList(playersList, players);
-      startBtn.style.display = host ? "block" : "none";
-    }
-
-    document.getElementById("createBtn").onclick = () => {
-      const name = document.getElementById("playerName").value.trim() || "Joueur";
-      socket.emit("createRoom", { playerName: name }, (res) => {
-        if (res.success) {
-          showLobby(res.roomCode, res.players, true);
-          statusEl.textContent = "Salle créée - tu es l'hôte";
-        }
-      });
-    };
-
-    document.getElementById("joinBtn").onclick = () => {
-      const name = document.getElementById("playerName").value.trim() || "Joueur";
-      const code = document.getElementById("roomCodeInput").value.trim().toUpperCase();
-      if (!code) return alert("Entre un code de salle");
-
-      socket.emit("joinRoom", { roomCode: code, playerName: name }, (res) => {
-        if (res.success) {
-          showLobby(code, res.players, false);
-          statusEl.textContent = "Tu as rejoint la salle";
-        } else {
-          alert(res.message);
-        }
-      });
-    };
-
-    startBtn.onclick = () => {
-      if (myRoom && isHost) socket.emit("startGame", { roomCode: myRoom });
-    };
-
-    document.getElementById("submitBtn").onclick = () => {
-      const code = document.getElementById("codeArea").value;
-      const btn = document.getElementById("submitBtn");
-      btn.disabled = true;
-      btn.textContent = "Vérification...";
-
-      socket.emit("submitSolution", { roomCode: myRoom, code }, (res) => {
-        btn.disabled = false;
-        btn.textContent = "Soumettre";
-        feedbackEl.style.display = "block";
-        feedbackEl.textContent = res.message;
-        feedbackEl.className = res.success ? "success" : "error";
-      });
-    };
-
-    document.getElementById("leaveBtn").onclick = () => location.reload();
-    document.getElementById("backHomeBtn").onclick = () => location.reload();
+    const $ = id => document.getElementById(id);
+    const home = $('home'), lobby = $('lobby'), game = $('game'), resultScreen = $('resultScreen');
+    const playersList = $('players'), gamePlayersList = $('gamePlayers'), statusEl = $('status'), startBtn = $('startBtn'), feedbackEl = $('feedback'), progressBar = $('progressBar');
+    let myRoom = null, isHost = false, totalRounds = 2, currentRound = 0;
+    function showScreen(screen) { [home,lobby,game,resultScreen].forEach(item => item.classList.remove('active')); screen.classList.add('active'); }
+    socket.on('connect', () => statusEl.textContent = 'Connecté · bonne chance !');
+    socket.on('connect_error', () => statusEl.textContent = 'Serveur indisponible · réessaie dans un instant');
+    socket.on('playerJoined', players => updatePlayersList(playersList, players));
+    socket.on('roundStarted', data => { showScreen(game); currentRound=data.roundNumber; $('roundTitle').textContent=data.problem.title; $('statement').textContent=data.problem.statement; $('codeArea').value=''; feedbackEl.className=''; feedbackEl.style.display='none'; updateTimer(data.timeLeft); updatePlayersList(gamePlayersList,data.players); renderProgress(data.roundNumber); statusEl.textContent='Manche en cours · reste concentré'; });
+    socket.on('timerUpdate', updateTimer);
+    socket.on('playerSolved', data => { updatePlayersList(gamePlayersList,data.players); });
+    socket.on('roundEnded', data => { showScreen(resultScreen); $('resultTitle').textContent='Fin de la manche'; $('resultContent').innerHTML='<p><strong>Qualifiés</strong></p><ul>'+data.survivors.map(p=>`<li class="solved">${escapeHtml(p.name)} ✓</li>`).join('')+'</ul><p><strong>Éliminés</strong></p><ul>'+data.eliminated.map(p=>`<li class="eliminated">${escapeHtml(p.name)}</li>`).join('')+'</ul><p class="hint">La prochaine manche arrive bientôt…</p>'; });
+    socket.on('gameOver', data => { showScreen(resultScreen); $('resultTitle').textContent='Fin de la partie'; const winners=data.players.filter(p=>!p.eliminated); $('resultContent').innerHTML='<p><strong>Gagnants</strong></p><ul>'+(winners.length?winners.map(p=>`<li class="solved">${escapeHtml(p.name)} 🏆</li>`).join(''):'<li>Aucun gagnant cette fois</li>')+'</ul>'; });
+    function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char])); }
+    function updateTimer(seconds) { const min=String(Math.floor(seconds/60)).padStart(2,'0'), sec=String(seconds%60).padStart(2,'0'); $('timer').textContent=`${min}:${sec}`; $('timer').style.color=seconds<=30?'var(--danger)':'var(--warning)'; }
+    function updatePlayersList(list, players) { list.innerHTML=''; players.forEach(p=>{ const li=document.createElement('li'); li.textContent=p.name+(p.solved?' ✓':'')+(p.eliminated?' (éliminé)':''); if(p.solved)li.classList.add('solved'); if(p.eliminated)li.classList.add('eliminated'); list.appendChild(li); }); }
+    function renderProgress(round) { progressBar.innerHTML=''; for(let i=1;i<=totalRounds;i++){const step=document.createElement('div');step.className='step '+(i<round?'completed ':'')+(i===round?'current':'');progressBar.appendChild(step);} }
+    function showLobby(code, players, host=false) { myRoom=code;isHost=host;showScreen(lobby);$('currentRoom').textContent=code;updatePlayersList(playersList,players);startBtn.style.display=host?'block':'none'; }
+    $('createBtn').onclick=()=>{const name=$('playerName').value.trim()||'Joueur';socket.emit('createRoom',{playerName:name},res=>{if(res.success){showLobby(res.roomCode,res.players,true);statusEl.textContent='Salle créée · tu es l’hôte';}});};
+    $('joinBtn').onclick=()=>{const name=$('playerName').value.trim()||'Joueur',code=$('roomCodeInput').value.trim().toUpperCase();if(!code)return alert('Entre un code de salle');socket.emit('joinRoom',{roomCode:code,playerName:name},res=>{if(res.success){showLobby(code,res.players);statusEl.textContent='Salle rejointe';}else alert(res.message);});};
+    startBtn.onclick=()=>{if(myRoom&&isHost)socket.emit('startGame',{roomCode:myRoom});};
+    $('submitBtn').onclick=()=>{const btn=$('submitBtn');btn.disabled=true;btn.textContent='Vérification…';socket.emit('submitSolution',{roomCode:myRoom,code:$('codeArea').value},res=>{btn.disabled=false;btn.textContent='Soumettre ma solution';feedbackEl.style.display='block';feedbackEl.textContent=res.message;feedbackEl.className=res.success?'feedback-success':'feedback-error';});};
+    $('leaveBtn').onclick=()=>location.reload(); $('backHomeBtn').onclick=()=>location.reload();
   </script>
 </body>
 </html>
