@@ -30,7 +30,7 @@
       color: white;
     }
     textarea {
-      height: 160px;
+      height: 150px;
       font-family: monospace;
       resize: vertical;
     }
@@ -39,30 +39,26 @@
       color: white;
       cursor: pointer;
     }
-    button:disabled {
-      background: #475569;
-    }
+    button:disabled { background: #475569; }
     #home, #lobby, #game, #resultScreen {
       display: none;
-      max-width: 480px;
+      max-width: 520px;
       margin: 0 auto;
     }
     #home { display: block; }
-    #players {
+    #players, #gamePlayers {
       list-style: none;
       padding: 0;
-      margin: 12px 0;
+      margin: 10px 0;
     }
-    #players li {
+    #players li, #gamePlayers li {
       background: #1e293b;
       padding: 10px;
-      margin: 6px 0;
+      margin: 5px 0;
       border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
     }
     .solved { color: #4ade80; }
-    .eliminated { color: #f87171; text-decoration: line-through; }
+    .eliminated { color: #f87171; text-decoration: line-through; opacity: 0.7; }
     #status {
       text-align: center;
       color: #94a3b8;
@@ -74,7 +70,7 @@
       font-weight: bold;
       text-align: center;
       color: #fbbf24;
-      margin: 10px 0;
+      margin: 8px 0;
     }
     #statement {
       background: #1e293b;
@@ -93,6 +89,45 @@
     }
     .success { background: #166534; }
     .error { background: #7f1d1d; }
+
+    /* Progression visuelle */
+    .progress-container {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .progress-step {
+      width: 42px;
+      height: 42px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      position: relative;
+    }
+    .progress-step.current {
+      border-color: #3b82f6;
+      background: #1e3a8a;
+    }
+    .progress-step.completed {
+      border-color: #22c55e;
+      background: #14532d;
+    }
+    .player-dot {
+      position: absolute;
+      bottom: -6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 2px solid white;
+    }
   </style>
 </head>
 <body>
@@ -118,16 +153,21 @@
   <!-- Écran de jeu -->
   <div id="game">
     <h2 id="roundTitle">Manche</h2>
+    
+    <!-- Barre de progression -->
+    <div class="progress-container" id="progressBar"></div>
+
     <div id="timer">03:00</div>
     <div id="statement"></div>
     <textarea id="codeArea" placeholder="Écris ton code ici..."></textarea>
     <button id="submitBtn">Soumettre</button>
     <div id="feedback"></div>
+
     <h3>Joueurs</h3>
     <ul id="gamePlayers"></ul>
   </div>
 
-  <!-- Écran de résultat de manche / fin -->
+  <!-- Résultat -->
   <div id="resultScreen">
     <h2 id="resultTitle"></h2>
     <div id="resultContent"></div>
@@ -151,13 +191,14 @@
     const startBtn = document.getElementById("startBtn");
     const timerEl = document.getElementById("timer");
     const feedbackEl = document.getElementById("feedback");
+    const progressBar = document.getElementById("progressBar");
 
     let myRoom = null;
     let isHost = false;
-    let myId = null;
+    let totalRounds = 2; // on a 2 manches pour l'instant
+    let currentRound = 0;
 
     socket.on("connect", () => {
-      myId = socket.id;
       statusEl.textContent = "Connecté";
     });
 
@@ -171,12 +212,15 @@
       resultScreen.style.display = "none";
       game.style.display = "block";
 
-      document.getElementById("roundTitle").textContent = data.problem.title + " (Manche " + data.roundNumber + ")";
+      currentRound = data.roundNumber;
+      document.getElementById("roundTitle").textContent = data.problem.title;
       document.getElementById("statement").textContent = data.problem.statement;
       document.getElementById("codeArea").value = "";
       feedbackEl.style.display = "none";
+
       updateTimer(data.timeLeft);
       updatePlayersList(gamePlayersList, data.players);
+      renderProgress(data.roundNumber, data.players);
       statusEl.textContent = "Manche en cours";
     });
 
@@ -186,6 +230,7 @@
 
     socket.on("playerSolved", (data) => {
       updatePlayersList(gamePlayersList, data.players);
+      renderProgress(currentRound, data.players);
     });
 
     socket.on("roundEnded", (data) => {
@@ -197,7 +242,7 @@
       data.survivors.forEach(p => html += `<li class="solved">${p.name}</li>`);
       html += "</ul><p><strong>Éliminés :</strong></p><ul>";
       data.eliminated.forEach(p => html += `<li class="eliminated">${p.name}</li>`);
-      html += "</ul><p>Prochaine manche dans 5 secondes...</p>";
+      html += "</ul><p>Prochaine manche dans quelques secondes...</p>";
 
       document.getElementById("resultContent").innerHTML = html;
     });
@@ -209,6 +254,7 @@
 
       const winners = data.players.filter(p => !p.eliminated);
       let html = "<p><strong>Gagnants :</strong></p><ul>";
+      if (winners.length === 0) html += "<li>Aucun gagnant</li>";
       winners.forEach(p => html += `<li class="solved">${p.name}</li>`);
       html += "</ul>";
 
@@ -219,8 +265,7 @@
       const min = Math.floor(seconds / 60).toString().padStart(2, "0");
       const sec = (seconds % 60).toString().padStart(2, "0");
       timerEl.textContent = `\( {min}: \){sec}`;
-      if (seconds <= 30) timerEl.style.color = "#f87171";
-      else timerEl.style.color = "#fbbf24";
+      timerEl.style.color = seconds <= 30 ? "#f87171" : "#fbbf24";
     }
 
     function updatePlayersList(listEl, players) {
@@ -235,6 +280,24 @@
         if (p.eliminated) li.classList.add("eliminated");
         listEl.appendChild(li);
       });
+    }
+
+    function renderProgress(roundNumber, players) {
+      progressBar.innerHTML = "";
+      for (let i = 1; i <= totalRounds; i++) {
+        const step = document.createElement("div");
+        step.className = "progress-step";
+        step.textContent = i;
+
+        if (i < roundNumber) step.classList.add("completed");
+        if (i === roundNumber) step.classList.add("current");
+
+        // Petits points pour les joueurs qui ont validé cette manche
+        const solvedHere = players.filter(p => p.solved && !p.eliminated);
+        // (simplifié pour l'instant)
+
+        progressBar.appendChild(step);
+      }
     }
 
     function showLobby(roomCode, players, host = false) {
@@ -273,9 +336,7 @@
     };
 
     startBtn.onclick = () => {
-      if (myRoom && isHost) {
-        socket.emit("startGame", { roomCode: myRoom });
-      }
+      if (myRoom && isHost) socket.emit("startGame", { roomCode: myRoom });
     };
 
     document.getElementById("submitBtn").onclick = () => {
