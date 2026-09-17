@@ -80,16 +80,33 @@ io.on('connection', (socket) => {
     callback({ success: true, roomCode, players: rooms[roomCode].players });
   });
 
-  // Rejoindre une salle
+  // Rejoindre une salle, y compris pendant une manche en cours
   socket.on('joinRoom', ({ roomCode, playerName }, callback) => {
     const room = rooms[roomCode];
     if (!room) return callback({ success: false, message: 'Salle introuvable' });
-    if (room.started) return callback({ success: false, message: 'La partie a déjà commencé' });
+    if (room.started && room.timeLeft <= 0) {
+      return callback({ success: false, message: 'La manche est terminée, attends la prochaine manche' });
+    }
 
-    room.players.push({ id: socket.id, name: playerName || 'Joueur', solved: false, eliminated: false });
+    const player = { id: socket.id, name: playerName || 'Joueur', solved: false, eliminated: false };
+    room.players.push(player);
     socket.join(roomCode);
     io.to(roomCode).emit('playerJoined', room.players);
-    callback({ success: true, players: room.players });
+    callback({ success: true, players: room.players, started: room.started });
+
+    // Le nouveau joueur reçoit immédiatement le défi et le temps restant.
+    // L'émission ciblée évite de redémarrer la manche pour les autres joueurs.
+    if (room.started && room.timeLeft > 0) {
+      const problem = problems[room.currentRound];
+      if (problem) {
+        socket.emit('roundStarted', {
+          problem,
+          timeLeft: room.timeLeft,
+          players: room.players,
+          roundNumber: room.currentRound + 1
+        });
+      }
+    }
   });
 
   // Lancer la partie (passe à la première manche)
@@ -101,26 +118,38 @@ io.on('connection', (socket) => {
     startRound(roomCode, 0);
   });
 
-  // Soumettre une solution
-  socket.on('submitSolution', ({ roomCode, code }, callback) => {
+  // Soumettre une solution pendant la manche en cours
+  socket.on('submitSolution', ({ roomCode, code }, callback = () => {}) => {
     const room = rooms[roomCode];
-    if (!room || !room.started) return;
+    if (!room || !room.started) {
+      return callback({ success: false, message: 'La partie n\'a pas encore commencé' });
+    }
+    if (room.timeLeft <= 0) {
+      return callback({ success: false, message: 'Le temps de la manche est écoulé' });
+    }
+
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.eliminated) {
+      return callback({ success: false, message: 'Tu ne participes pas à cette manche' });
+    }
+    if (player.solved) {
+      return callback({ success: false, message: 'Ta solution est déjà validée' });
+    }
 
     const problem = problems[room.currentRound];
-    if (!problem) return;
+    if (!problem) {
+      return callback({ success: false, message: 'Manche introuvable' });
+    }
 
     const result = problem.test(code);
     callback(result);
 
     if (result.success) {
-      const player = room.players.find(p => p.id === socket.id);
-      if (player && !player.solved) {
-        player.solved = true;
-        io.to(roomCode).emit('playerSolved', {
-          playerId: socket.id,
-          players: room.players
-        });
-      }
+      player.solved = true;
+      io.to(roomCode).emit('playerSolved', {
+        playerId: socket.id,
+        players: room.players
+      });
     }
   });
 
