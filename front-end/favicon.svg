@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Codejoueur favicon">
+  <defs>
+    <linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#29c7ff"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="18" x2="46" y1="18" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#bg)"/>
+  <rect x="8" y="8" width="48" height="48" rx="14" fill="rgba(15,23,42,0.18)" stroke="rgba(255,255,255,0.18)"/>
+
+  <g opacity="0.28" stroke="#dbeafe" stroke-width="1.2">
+    <path d="M14 20h36M14 32h36M14 44h36M20 14v36M32 14v36M44 14v36"/>
+  </g>
+
+  <g fill="none" stroke="url(#spark)" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5">
+    <path d="M24 20 16 32l8 12"/>
+    <path d="M40 20 48 32l-8 12"/>
+    <path d="M30 18l4 28"/>
+  </g>
+
+  <circle cx="46" cy="18" r="3" fill="#fbbf24"/>
+</svg>
