@@ -1,27 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Codejoueur favicon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Codejoueur</title>
+  <desc id="desc">Portrait stylisé d'une joueuse de code avec lunettes et microphone</desc>
   <defs>
-    <linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7c5cff"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#26150e"/>
+      <stop offset="0.52" stop-color="#8f4c24"/>
       <stop offset="1" stop-color="#29c7ff"/>
     </linearGradient>
-    <linearGradient id="spark" x1="18" x2="46" y1="18" y2="46" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f8fafc"/>
-      <stop offset="1" stop-color="#dbeafe"/>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6c3a1"/>
+      <stop offset="1" stop-color="#b86645"/>
     </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171015"/>
+      <stop offset="1" stop-color="#4d251b"/>
+    </linearGradient>
+    <linearGradient id="mic" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#46566b"/>
+      <stop offset="1" stop-color="#080b16"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="1.5"/></filter>
   </defs>
 
-  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#bg)"/>
-  <rect x="8" y="8" width="48" height="48" rx="14" fill="rgba(15,23,42,0.18)" stroke="rgba(255,255,255,0.18)"/>
+  <rect width="64" height="64" rx="16" fill="#080b16"/>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#background)"/>
+  <circle cx="49" cy="12" r="10" fill="#ffc77d" opacity=".3" filter="url(#glow)"/>
+  <path d="M4 49V9a7 7 0 0 1 7-7h7v60h-7a7 7 0 0 1-7-7Z" fill="#100c0c" opacity=".6"/>
 
-  <g opacity="0.28" stroke="#dbeafe" stroke-width="1.2">
-    <path d="M14 20h36M14 32h36M14 44h36M20 14v36M32 14v36M44 14v36"/>
+  <!-- cheveux et visage -->
+  <path d="M15 46c-2-15 1-32 15-35 12-3 22 7 21 22l-2 20H17Z" fill="url(#hair)"/>
+  <path d="M24 16c7-7 19-3 22 6 2 7 1 19-4 25-4 5-12 5-17 0-5-6-7-23-1-31Z" fill="url(#skin)"/>
+  <path d="M22 18c3-8 17-12 24-3l3 10c-6-5-12-7-21-4l-7 7Z" fill="url(#hair)"/>
+
+  <!-- lunettes -->
+  <g fill="#172034" fill-opacity=".18" stroke="#e8f3ff" stroke-width="1.5">
+    <rect x="21" y="25" width="11" height="8" rx="3"/>
+    <rect x="35" y="25" width="11" height="8" rx="3"/>
+    <path d="M32 27h3M21 27l-3-1M46 27l3-1" fill="none" stroke-linecap="round"/>
   </g>
+  <circle cx="28" cy="29" r="1.3" fill="#1b1720"/>
+  <circle cx="39" cy="29" r="1.3" fill="#1b1720"/>
+  <path d="M32 38c2 2 5 2 7 0" fill="none" stroke="#8f3f39" stroke-width="1.2" stroke-linecap="round"/>
 
-  <g fill="none" stroke="url(#spark)" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5">
-    <path d="M24 20 16 32l8 12"/>
-    <path d="M40 20 48 32l-8 12"/>
-    <path d="M30 18l4 28"/>
+  <!-- vêtement -->
+  <path d="M11 62c1-11 7-17 16-19l7 7 7-7c8 2 12 8 13 19Z" fill="#0c101c"/>
+  <path d="m27 43 7 8 7-8" fill="none" stroke="#27344b" stroke-width="2"/>
+
+  <!-- microphone -->
+  <g transform="rotate(-18 39 49)">
+    <rect x="36" y="39" width="8" height="18" rx="4" fill="url(#mic)" stroke="#a9c4e8" stroke-width=".8"/>
+    <path d="M38 44h4M38 47h4M38 50h4" stroke="#91b5de" stroke-width=".8" opacity=".8"/>
+    <path d="M40 57v4M35 61h10" stroke="#c8d9ef" stroke-width="1.5" stroke-linecap="round"/>
   </g>
-
-  <circle cx="46" cy="18" r="3" fill="#fbbf24"/>
+  <circle cx="52" cy="11" r="2" fill="#fbbf24"/>
 </svg>
